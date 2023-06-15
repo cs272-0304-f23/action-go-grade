@@ -2,6 +2,14 @@ name: 'Go Grade Action'
 description: 'Run `go test` with grading considerations and rich summary output & annotations'
 
 inputs:
+  moduleDirectory:
+    description: 'Directory of go module to test'
+    required: false
+    default: '.'
+  testArguments:
+    description: 'Arguments to `go test`, `-json` will be prepended'
+    required: false
+    default: './...'
   due_date:
     description: 'Date the assignment is due. In ISO format (eg. `2023-08-25` -> 11:59:59PM on August 25th 2023)'
     required: true
