@@ -27,6 +27,7 @@ export function parseRubric(): Rubric {
   let pointsPossible = 100
   let dueDate = DateTime.now()
 
+  core.info('Parsing rubric from GitHub context...')
   // read rubric from github environment variables
   const rubric = core.getInput('rubric')
   if(rubric) {
@@ -34,18 +35,23 @@ export function parseRubric(): Rubric {
     const rubricObj = yaml.load(rubric) as Partial<Rubric>
     if(rubricObj.latePenalty) {
       latePenalty = rubricObj.latePenalty
+      core.info(`\tFound late penalty: ${latePenalty}`)
     }
     if(rubricObj.maxPenalty) {
       maxPenalty = rubricObj.maxPenalty
+      core.info(`\tFound max penalty: ${maxPenalty}`)
     }
     if(rubricObj.tests) {
       tests = rubricObj.tests
+      core.info(`\tFound tests: ${JSON.stringify(tests)}`)
     }
     if(rubricObj.pointsPossible) {
       pointsPossible = rubricObj.pointsPossible
+      core.info(`\tFound points possible: ${pointsPossible}`)
     }
     if(rubricObj.dueDate) {
       dueDate = DateTime.fromISO(rubricObj.dueDate + eod, { zone })
+      core.info(`\tFound due date: ${dueDate.toLocaleString(DateTime.DATETIME_FULL)}`)
     }
   }
 

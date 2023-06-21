@@ -106,6 +106,7 @@ class TimeKeeper {
   private calculateGrade(daysLate: number, startingPoints: number, possiblePoints: number): GradeResults {
     core.info(`Starting: ${startingPoints} Points`)
     core.info(`Possible: ${possiblePoints} Points\n`)
+    core.info(`Due Date: ${this.dueDate.toLocaleString(luxon.DateTime.DATETIME_FULL)}`)
 
     const pointPenalty = possiblePoints * this.latePenalty
     const maxPoints = possiblePoints * this.maxPenalty
