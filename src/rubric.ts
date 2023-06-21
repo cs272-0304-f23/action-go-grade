@@ -21,7 +21,7 @@ export type Rubric = {
  */
 export function parseRubric(): Rubric {
   // initialize rubric with default values
-  let latePenalty = 0.2
+  let latePenalty = 0.02
   let maxPenalty = 0.26
   let tests: {[testName: string]: number} = {}
   let pointsPossible = 100
