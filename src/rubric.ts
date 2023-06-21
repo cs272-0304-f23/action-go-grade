@@ -1,3 +1,4 @@
+import * as yaml from 'js-yaml'
 import * as core from '@actions/core'
 
 import { DateTime, Settings } from 'luxon'
@@ -29,7 +30,8 @@ export function parseRubric(): Rubric {
   // read rubric from github environment variables
   const rubric = core.getInput('rubric')
   if(rubric) {
-    const rubricObj = JSON.parse(rubric)
+    // note this can throw an error (but we want it to so the action fails with invalid rubric)
+    const rubricObj = yaml.load(rubric) as Partial<Rubric>
     if(rubricObj.latePenalty) {
       latePenalty = rubricObj.latePenalty
     }
