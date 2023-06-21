@@ -6,27 +6,28 @@ const eod = 'T23:59:59';
 luxon.Settings.defaultZone = zone;
 
 import Grader from './grader'
-import TimeKeeper, { createArtifact } from './deadline'
 import Renderer from "./renderer";
+
+import { parseRubric } from './rubric'
+import TimeKeeper, { createArtifact } from './deadline'
 
 class Runner {
   grader: Grader
   timeKeeper: TimeKeeper
 
   constructor() {
-    // Parse due date from GitHub Actions environment
-    const dueDateStr = core.getInput('due_date', { required: true })
-    const dueDate = luxon.DateTime.fromISO(dueDateStr + eod, { zone })
-    this.timeKeeper = new TimeKeeper(dueDate)
+    // Parse rubric from owning repository
+    const rubric = parseRubric()
 
-    const moduleDirectory = core.getInput('moduleDirectory')
+    // Parse module directory and test arguments from GitHub Actions environment
     const testArguments = core.getInput('testArguments')
-    this.grader = new Grader(moduleDirectory, testArguments)
+    this.grader = new Grader(rubric, testArguments)
+    
+    this.timeKeeper = new TimeKeeper(rubric)
   }
 
   /**
    * Runs the action. 
-   * For now, we just print out the inputs to ensure that the action is working.
    */
   async run() {
     // grade the assignment (this will not fail the action; if `go test` fails, we just award 0 points)

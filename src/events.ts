@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 
-// https://cs.opensource.google/go/go/+/master:src/cmd/test2json/main.go;l=46-55
+// https://cs.opensource.google/go/go/+/master:src/cmd/test2json/main.go;l=49-59
 export type TestEventAction =
   | 'run' // the test has started running
   | 'pause' // the test has been paused
@@ -25,17 +25,12 @@ export const conclusiveTestEvents: TestEventActionConclusion[] = [
 // https://cs.opensource.google/go/go/+/master:src/cmd/test2json/main.go;l=34-41
 export interface TestEvent {
   // parsed fields from go's test event
-  time?: Date
   action: TestEventAction
   package: string
   test: string
-  elapsed?: number // seconds
   output?: string
   // added fields
-  isSubtest: boolean
-  isPackageLevel: boolean
   isConclusive: boolean
-  isCached: boolean
 }
 
 /**
@@ -48,19 +43,13 @@ export function parseTestEvents(stdout: string): TestEvent[] {
 
   const lines = stdout.split('\n').filter(line => line.length !== 0)
   for (let line of lines) {
-
     try {
       const json = JSON.parse(line)
       events.push({
-        time: json.Time && new Date(json.Time),
         action: json.Action as TestEventAction,
         package: json.Package,
         test: json.Test,
-        elapsed: json.Elapsed,
         output: json.Output,
-        isCached: json.Output?.includes('\t(cached)') || false,
-        isSubtest: json.Test?.includes('/') || false, // afaik there isn't a better indicator in test2json
-        isPackageLevel: typeof json.Test === 'undefined',
         isConclusive: conclusiveTestEvents.includes(json.Action),
       })
     } catch {

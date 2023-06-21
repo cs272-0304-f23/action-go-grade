@@ -1,12 +1,10 @@
 import * as fs from "fs";
+import * as luxon from "luxon"
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as artifact from "@actions/artifact";
 
-import * as luxon from "luxon"
-
-const LATE_PENALTY = 0.02 // 2% per day late
-const MAX_PENALTY = 0.26  // 26% max late penalty
+import { Rubric } from "./rubric";
 
 // GradeResults is an object that shows the results of the grade calculation
 export type GradeResults = {
@@ -23,9 +21,13 @@ export type GradeResults = {
 
 class TimeKeeper {
   private dueDate: luxon.DateTime
+  private latePenalty: number
+  private maxPenalty: number
 
-  constructor(dueDate: luxon.DateTime) {
-    this.dueDate = dueDate
+  constructor(rubric: Rubric) {
+    this.dueDate = rubric.dueDate
+    this.latePenalty = rubric.latePenalty
+    this.maxPenalty = rubric.maxPenalty
   }
 
   /**
@@ -105,8 +107,8 @@ class TimeKeeper {
     core.info(`Starting: ${startingPoints} Points`)
     core.info(`Possible: ${possiblePoints} Points\n`)
 
-    const pointPenalty = possiblePoints * LATE_PENALTY
-    const maxPoints = possiblePoints * MAX_PENALTY
+    const pointPenalty = possiblePoints * this.latePenalty
+    const maxPoints = possiblePoints * this.maxPenalty
 
     let pointDeduction = 0
     if(daysLate > 0) {
@@ -122,8 +124,8 @@ class TimeKeeper {
     return {
       startingPoints: startingPoints,
       possiblePoints: possiblePoints,
-      latePenalty: LATE_PENALTY,
-      maxPenalty: MAX_PENALTY,
+      latePenalty: this.latePenalty,
+      maxPenalty: this.maxPenalty,
       daysLate: daysLate,
       pointsDeducted: pointDeduction,
       grade: grade

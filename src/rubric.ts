@@ -1,0 +1,57 @@
+import * as core from '@actions/core'
+
+import { DateTime, Settings } from 'luxon'
+const zone = 'America/Los_Angeles';
+const eod = 'T23:59:59';
+Settings.defaultZone = zone;
+
+export type Rubric = {
+  tests: {[testName: string]: number}
+  pointsPossible: number
+  dueDate: DateTime
+  latePenalty: number
+  maxPenalty: number
+}
+
+
+/**
+ * Parses the rubric from the owning repository
+ * @returns the rubric as an object
+ */
+export function parseRubric(): Rubric {
+  // initialize rubric with default values
+  let latePenalty = 0.2
+  let maxPenalty = 0.26
+  let tests: {[testName: string]: number} = {}
+  let pointsPossible = 100
+  let dueDate = DateTime.now()
+
+  // read rubric from github environment variables
+  const rubric = core.getInput('rubric')
+  if(rubric) {
+    const rubricObj = JSON.parse(rubric)
+    if(rubricObj.latePenalty) {
+      latePenalty = rubricObj.latePenalty
+    }
+    if(rubricObj.maxPenalty) {
+      maxPenalty = rubricObj.maxPenalty
+    }
+    if(rubricObj.tests) {
+      tests = rubricObj.tests
+    }
+    if(rubricObj.pointsPossible) {
+      pointsPossible = rubricObj.pointsPossible
+    }
+    if(rubricObj.dueDate) {
+      dueDate = DateTime.fromISO(rubricObj.dueDate + eod, { zone })
+    }
+  }
+
+  return {
+    tests,
+    pointsPossible,
+    dueDate,
+    latePenalty,
+    maxPenalty
+  }
+}
