@@ -26,7 +26,7 @@ class Runner {
    */
   async run() {
     // grade the assignment (this will not fail the action; if `go test` fails, we just award 0 points)
-    const { totalPointsAwarded, testResults: testResults } = await this.grader.grade()
+    const { totalPointsAwarded, testResults } = await this.grader.grade()
 
     // interpret the results of the time keeper. Will not fail the action.
     const gradeResults = this.timeKeeper.checkDeadline(totalPointsAwarded, testResults)
@@ -35,7 +35,7 @@ class Runner {
     createArtifact(gradeResults)
 
     // generate summary
-    new Renderer().writeSummary(gradeResults)
+    new Renderer(gradeResults).writeSummary()
   }
 }
 
