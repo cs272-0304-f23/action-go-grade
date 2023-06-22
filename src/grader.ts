@@ -101,7 +101,7 @@ class Grader {
       }
       testResults.push(tr)
 
-      core.info(`test: ${event.test} action: ${event.action} points: ${tr.pointsAwarded}/${tr.pointsPossible}`)
+      core.info(`test=${event.test} action=${event.action} points=${tr.pointsAwarded}/${tr.pointsPossible}`)
     }
 
     return {

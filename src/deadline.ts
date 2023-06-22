@@ -5,7 +5,6 @@ import * as github from "@actions/github";
 import * as artifact from "@actions/artifact";
 
 import { Rubric } from "./rubric";
-import { TestEvent } from "./events";
 import { TestResult } from "./grader";
 
 // GradeResults is an object that shows the results of the grade calculation

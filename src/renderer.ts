@@ -4,9 +4,18 @@ import { TestEventActionConclusion } from "./events";
 
 class Renderer {
   private gradeResults: GradeResults
+  private totalConclusions: {[key in TestEventActionConclusion]: number} = {
+    pass: 0,
+    fail: 0,
+    skip: 0,
+  }
+
 
   constructor(gradeResults: GradeResults) {
     this.gradeResults = gradeResults
+    for(let result of this.gradeResults.testResults) {
+      this.totalConclusions[result.test as TestEventActionConclusion]++
+    }
   }
 
   writeSummary() {
@@ -26,28 +35,27 @@ class Renderer {
   private renderSummaryText(): string {
     let summarized = `${this.gradeResults.testResults.length} test${this.gradeResults.testResults.length === 1 ? '' : 's'}`
 
-    const totalConclusions = {
-      pass: 0,
-      fail: 0,
-      skip: 0
-    }
-
     const conclusionText = this.gradeResults.testResults
-      .filter(c => totalConclusions[c.test as TestEventActionConclusion])
-      .map(c => `${totalConclusions[c.test as TestEventActionConclusion]} ${c.test === 'skip' ? 'skipp' : c}ed`)
+      .filter(c => this.totalConclusions[c.test as TestEventActionConclusion])
+      .map(c => `${this.totalConclusions[c.test as TestEventActionConclusion]} ${c.test === 'skip' ? 'skipp' : c}ed`)
       .join(', ')
 
     if (conclusionText.length !== 0) {
       summarized += ` (${conclusionText})`
     }
-    summarized += `<p>Score: (<code id=\"grade\">${this.gradeResults.grade}/${this.gradeResults.possiblePoints}</code>)</p>`
+
+    // add some flair for perfect scores
     if(this.gradeResults.grade === this.gradeResults.possiblePoints) {
       summarized += `<p>🎉💯🎉💯🎉</p>`
     }
 
+    // add the grade
+    const lateText = this.gradeResults.daysLate ? ` (${this.gradeResults.startingPoints} - ${this.gradeResults.startingPoints - this.gradeResults.grade})` : ""
+    summarized += `<p>Score: <code>${this.gradeResults.grade}/${this.gradeResults.possiblePoints}</code>${lateText}</p>`
+
     // add a note for late submissions
     if(this.gradeResults.daysLate > 0) {
-      summarized += `<p>Submission was ${this.gradeResults.daysLate} days late. (Due on ${this.gradeResults.dueDate}, submitted on ${this.gradeResults.submissionDate})</p>`
+      summarized += `<p>Submission was ${this.gradeResults.daysLate} days late.<br>(Due on ${this.gradeResults.dueDate}, submitted on ${this.gradeResults.submissionDate})</p>`
     }
 
     return summarized
