@@ -30,15 +30,9 @@ class Grader {
   }> {
     core.info('grading repository...')
     // run go test
-    const { retcode, stdout, stderr } = await this.goTest()
+    const { retcode, stdout } = await this.goTest()
     if(retcode !== 0) {
-      core.debug('go test failed')
-      core.debug(stdout)
-      core.debug(stderr)
-      return {
-        totalPointsAwarded: 0,
-        testResults: [],
-      }
+      core.info(`go test failed with code ${retcode}. Some tests were unsuccessful.`)
     }
 
     // parse test events from stdout
