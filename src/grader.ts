@@ -1,6 +1,13 @@
+import * as core from '@actions/core'
+
 import { exec } from '@actions/exec'
 import { Rubric } from './rubric'
 import { TestEvent, parseTestEvents } from './events'
+
+export interface TestResult extends TestEvent {
+  pointsAwarded: number
+  pointsPossible: number
+}
 
 class Grader {
   testArguments = ['./...']
@@ -18,26 +25,26 @@ class Grader {
    * interprets the points awarded based on the provided test rubric.
    */
   async grade(): Promise<{
-    pointsAwarded: number,
-    pointsPossible: number,
-    retcode: number,
-    stderr: string,
+    totalPointsAwarded: number
+    testResults: TestResult[]
   }> {
     // run go test
     const { retcode, stdout, stderr } = await this.goTest()
+    if(retcode !== 0) {
+      core.debug('go test failed')
+      core.debug(stdout)
+      core.debug(stderr)
+      return {
+        totalPointsAwarded: 0,
+        testResults: [],
+      }
+    }
 
     // parse test events from stdout
     const testEvents = parseTestEvents(stdout)
 
     // assign points based on rubric
-    const { pointsAwarded, pointsPossible } = await this.assignPoints(testEvents)
-
-    return {
-      pointsAwarded,
-      pointsPossible,
-      retcode,
-      stderr,
-    }
+    return this.assignPoints(testEvents)
   }
 
   /**
@@ -75,24 +82,33 @@ class Grader {
   }
 
   private async assignPoints(testEvents: TestEvent[]): Promise<{
-    pointsPossible: number,
-    pointsAwarded: number
+    totalPointsAwarded: number
+    testResults: TestResult[]
   }> {
-    let pointsAwarded = 0
+    let totalPointsAwarded = 0
+    let testResults: TestResult[] = []
     for(let event of testEvents) {
       // skip non-conclusive tests
       if(!event.isConclusive) {
         continue
       }
+
+      let tr: TestResult = {
+        ...event,
+        pointsAwarded: 0,
+        pointsPossible: this.rubric.tests[event.test],
+      }
       
       if(event.action === 'pass') {
-        pointsAwarded += this.rubric.tests[event.test] || 0 // if this test is not in the rubric, it is worth 0 points
+        tr.pointsAwarded = tr.pointsPossible
+        totalPointsAwarded += tr.pointsAwarded
       }
+      testResults.push(tr)
     }
 
     return {
-      pointsAwarded,
-      pointsPossible: this.rubric.pointsPossible,
+      totalPointsAwarded,
+      testResults,
     }
   }
 }

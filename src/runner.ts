@@ -1,10 +1,5 @@
 import * as core from "@actions/core";
 
-import * as luxon from "luxon"
-const zone = 'America/Los_Angeles';
-const eod = 'T23:59:59';
-luxon.Settings.defaultZone = zone;
-
 import Grader from './grader'
 import Renderer from "./renderer";
 
@@ -31,10 +26,10 @@ class Runner {
    */
   async run() {
     // grade the assignment (this will not fail the action; if `go test` fails, we just award 0 points)
-    const { pointsAwarded, pointsPossible } = await this.grader.grade()
+    const { totalPointsAwarded, testResults: testResults } = await this.grader.grade()
 
     // interpret the results of the time keeper. Will not fail the action.
-    const gradeResults = await this.timeKeeper.checkDeadline(pointsAwarded, pointsPossible)
+    const gradeResults = this.timeKeeper.checkDeadline(totalPointsAwarded, testResults)
 
     // produce artifact
     createArtifact(gradeResults)

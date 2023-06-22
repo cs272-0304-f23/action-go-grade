@@ -5,6 +5,8 @@ import * as github from "@actions/github";
 import * as artifact from "@actions/artifact";
 
 import { Rubric } from "./rubric";
+import { TestEvent } from "./events";
+import { TestResult } from "./grader";
 
 // GradeResults is an object that shows the results of the grade calculation
 export type GradeResults = {
@@ -14,18 +16,24 @@ export type GradeResults = {
   latePenalty: number
   maxPenalty: number
 
+  dueDate: string
+  submissionDate: string
   daysLate: number
   pointsDeducted: number
   grade: number
+
+  testResults: TestResult[]
 }
 
 class TimeKeeper {
   private dueDate: luxon.DateTime
+  private pointsPossible: number
   private latePenalty: number
   private maxPenalty: number
 
   constructor(rubric: Rubric) {
     this.dueDate = rubric.dueDate
+    this.pointsPossible = rubric.pointsPossible
     this.latePenalty = rubric.latePenalty
     this.maxPenalty = rubric.maxPenalty
   }
@@ -33,10 +41,22 @@ class TimeKeeper {
   /**
    * checks the deadline and calculates the grade
    */
-  async checkDeadline(startingPoints: number, possiblePoints: number): Promise<GradeResults> {
+  checkDeadline(startingPoints: number, testResults: TestResult[]): GradeResults {
     const submissionDate = this.parseSubmissionDate()
     const daysLate = this.checkSubmissionDate(submissionDate)
-    return this.calculateGrade(daysLate, startingPoints, possiblePoints)
+    const { pointsDeducted, grade } = this.calculateGrade(daysLate, startingPoints)
+    return {
+      startingPoints,
+      possiblePoints: this.pointsPossible,
+      latePenalty: this.latePenalty,
+      maxPenalty: this.maxPenalty,
+      dueDate: this.dueDate.toLocaleString(luxon.DateTime.DATETIME_FULL),
+      submissionDate: submissionDate.toLocaleString(luxon.DateTime.DATETIME_FULL),
+      daysLate,
+      pointsDeducted,
+      grade,
+      testResults,
+    }
   }
 
   /**
@@ -103,35 +123,30 @@ class TimeKeeper {
   /**
    * Calculates the grade based on the number of days late
    */
-  private calculateGrade(daysLate: number, startingPoints: number, possiblePoints: number): GradeResults {
+  private calculateGrade(daysLate: number, startingPoints: number): { pointsDeducted: number, grade: number } {
     core.info(`Starting: ${startingPoints} Points`)
-    core.info(`Possible: ${possiblePoints} Points`)
+    core.info(`Possible: ${this.pointsPossible} Points`)
     core.info(`Due Date: ${this.dueDate.toLocaleString(luxon.DateTime.DATETIME_FULL)}`)
 
-    const pointPenalty = possiblePoints * this.latePenalty
+    const pointPenalty = this.pointsPossible * this.latePenalty
     core.info(`Late Penalty: -${pointPenalty} Points per day`)
-    const maxPoints = possiblePoints * this.maxPenalty
+    const maxPoints = this.pointsPossible * this.maxPenalty
     core.info(`Max Penalty: -${maxPoints} Points`)
 
-    let pointDeduction = 0
+    let pointsDeducted = 0
     if(daysLate > 0) {
-      pointDeduction = Math.min(pointPenalty * daysLate, maxPoints)
-      console.log(`Points Deducted: -${pointDeduction} Points`)
+      pointsDeducted = Math.min(pointPenalty * daysLate, maxPoints)
+      console.log(`Points Deducted: -${pointsDeducted} Points`)
     }
 
-    const grade = Math.max(startingPoints - pointDeduction, 0) // don't go below 0 points (eg. student only gets 10pts on a 100pt assignment and is late 2 months...)
-    const percent = (grade / possiblePoints * 100).toFixed(1);
+    const grade = Math.max(startingPoints - pointsDeducted, 0) // don't go below 0 points (eg. student only gets 10pts on a 100pt assignment and is late 2 months...)
+    const percent = (grade / this.pointsPossible * 100).toFixed(1);
     console.log(`\nGrade: ${grade} Points (${percent}%)`)
 
     // create the GradeResults object
     return {
-      startingPoints: startingPoints,
-      possiblePoints: possiblePoints,
-      latePenalty: this.latePenalty,
-      maxPenalty: this.maxPenalty,
-      daysLate: daysLate,
-      pointsDeducted: pointDeduction,
-      grade: grade
+      pointsDeducted,
+      grade,
     }
   }
 }
