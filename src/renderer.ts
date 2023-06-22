@@ -14,7 +14,7 @@ class Renderer {
   constructor(gradeResults: GradeResults) {
     this.gradeResults = gradeResults
     for(let result of this.gradeResults.testResults) {
-      this.totalConclusions[result.test as TestEventActionConclusion]++
+      this.totalConclusions[result.action as TestEventActionConclusion]++
     }
   }
 
