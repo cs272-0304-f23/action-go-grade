@@ -35,9 +35,9 @@ class Renderer {
   private renderSummaryText(): string {
     let summarized = `${this.gradeResults.testResults.length} test${this.gradeResults.testResults.length === 1 ? '' : 's'}`
 
-    const conclusionText = this.gradeResults.testResults
-      .filter(c => this.totalConclusions[c.test as TestEventActionConclusion])
-      .map(c => `${this.totalConclusions[c.test as TestEventActionConclusion]} ${c.test === 'skip' ? 'skipp' : c}ed`)
+    const conclusionText = Object.entries(this.totalConclusions)
+      .filter(([_, count]) => count > 0)
+      .map(([conclusion, count]) => `${count} ${conclusion === 'skip' ? 'skipp' : conclusion}ed`)
       .join(', ')
 
     if (conclusionText.length !== 0) {
