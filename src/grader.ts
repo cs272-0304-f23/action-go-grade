@@ -28,6 +28,7 @@ class Grader {
     totalPointsAwarded: number
     testResults: TestResult[]
   }> {
+    core.info('grading repository...')
     // run go test
     const { retcode, stdout, stderr } = await this.goTest()
     if(retcode !== 0) {
@@ -88,11 +89,12 @@ class Grader {
     let totalPointsAwarded = 0
     let testResults: TestResult[] = []
     for(let event of testEvents) {
-      // skip non-conclusive tests
-      if(!event.isConclusive) {
+      // skip non-conclusive tests and tests not in rubric
+      if(!event.isConclusive || !this.rubric.tests[event.test]) {
         continue
       }
 
+      // make test result object
       let tr: TestResult = {
         ...event,
         pointsAwarded: 0,
@@ -104,6 +106,8 @@ class Grader {
         totalPointsAwarded += tr.pointsAwarded
       }
       testResults.push(tr)
+
+      core.info(`test: ${event.test} action: ${event.action} points: ${tr.pointsAwarded}/${tr.pointsPossible}`)
     }
 
     return {

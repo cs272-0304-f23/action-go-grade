@@ -10,6 +10,7 @@ class Renderer {
   }
 
   writeSummary() {
+    core.info('writing summary...')
     core.summary
       .addHeading('📝 Test results', 2)
       .addRaw('<div align="center">') // center alignment hack
