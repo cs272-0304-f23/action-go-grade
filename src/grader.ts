@@ -85,7 +85,7 @@ class Grader {
     let testResults: TestResult[] = []
     for(let event of testEvents) {
       // skip non-conclusive tests and tests not in rubric
-      if(!event.isConclusive || !this.rubric.tests[event.test]) {
+      if(!event.isConclusive) {
         continue
       }
 
