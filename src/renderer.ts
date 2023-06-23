@@ -1,6 +1,8 @@
 import * as core from "@actions/core";
 import { type GradeResults } from "./deadline";
-import { TestEventActionConclusion } from "./events";
+import { TestEventAction, TestEventActionConclusion } from "./events";
+import { TestResult } from "./grader";
+import { SummaryTableCell, SummaryTableRow } from "@actions/core/lib/summary";
 
 class Renderer {
   private gradeResults: GradeResults
@@ -9,7 +11,11 @@ class Renderer {
     fail: 0,
     skip: 0,
   }
-
+  private headers: SummaryTableRow = [
+    { data: '❓ Result', header: true },
+    { data: '🧪 Test', header: true },
+    { data: '💯 Points', header: true },
+  ]
 
   constructor(gradeResults: GradeResults) {
     this.gradeResults = gradeResults
@@ -18,12 +24,43 @@ class Renderer {
     }
   }
 
-  writeSummary() {
+  writeSummary(stdout: string) {
     core.info('writing summary...')
+
+    // group results by package
+    const groups: {[key: string]: TestResult[]} = {}
+    for(const result of this.gradeResults.testResults) {
+      if(!groups[result.package]) {
+        groups[result.package] = []
+      }
+      groups[result.package].push(result)
+    }
+
+    // sort packages by name
+    const packageNames = Object.keys(groups).sort()
+
+    // construct the table
+    const rows = [this.headers]
+    for(const packageName of packageNames) {
+      const sortedPackageResults = groups[packageName].sort((a, b) => a.test.localeCompare(b.test))
+      // add a row for the package name
+      rows.push([{ data: `<b><u>${packageName}</u></b>`, colspan: '3' } as SummaryTableCell])
+      for(const test of sortedPackageResults) {
+        rows.push([
+          `${this.emojiFor(test.action)} ${test.action == 'skip' ? 'skipp' : test.action}ed`,
+          `<code>${test.test}</code>`,
+          test.pointsPossible ? `<b>${test.pointsAwarded}/${test.pointsPossible}</b>`: '<b>-</b>'
+        ])
+      }
+    }
+    rows.push([{ data: `<details><summary>🖨️ Output</summary><pre><code>${stdout}</code></pre></details>`, colspan: '3' } as SummaryTableCell])
+
     core.summary
-      .addHeading('📝 Test results', 2)
       .addRaw('<div align="center">') // center alignment hack
+      .addHeading('📝 Autograder results', 2)
       .addRaw(this.renderSummaryText())
+      .addHeading('🧪 Test Results', 2)
+      .addTable(rows)
       .addRaw('</div>')
       .write()
   }
@@ -50,7 +87,7 @@ class Renderer {
     }
 
     // add the grade
-    const lateText = this.gradeResults.daysLate ? ` (${this.gradeResults.startingPoints} - ${this.gradeResults.startingPoints - this.gradeResults.grade})` : ""
+    const lateText = this.gradeResults.daysLate ? ` (${this.gradeResults.startingPoints} - ${this.gradeResults.pointsDeducted})` : ""
     summarized += `<p>Score: <code>${this.gradeResults.grade}/${this.gradeResults.possiblePoints}</code>${lateText}</p>`
 
     // add a note for late submissions
@@ -59,6 +96,24 @@ class Renderer {
     }
 
     return summarized
+  }
+
+  /**
+   * Displayed emoji for a specific test event
+   * @param action test event action
+   * @returns an emoji
+   */
+  private emojiFor(action: TestEventAction): string {
+    switch (action) {
+      case 'pass':
+        return '🟢'
+      case 'fail':
+        return '🔴'
+      case 'skip':
+        return '🟡'
+      default:
+        return '❓'
+    }
   }
 }
 

@@ -27,6 +27,7 @@ class Grader {
   async grade(): Promise<{
     totalPointsAwarded: number
     testResults: TestResult[]
+    stdout: string
   }> {
     core.info('grading repository...')
     // run go test
@@ -39,7 +40,7 @@ class Grader {
     const testEvents = parseTestEvents(stdout)
 
     // assign points based on rubric
-    return this.assignPoints(testEvents)
+    return { ...await this.assignPoints(testEvents), stdout }
   }
 
   /**
