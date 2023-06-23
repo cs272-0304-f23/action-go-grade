@@ -84,7 +84,7 @@ class Grader {
     let totalPointsAwarded = 0
     let testResults: TestResult[] = []
     for(let event of testEvents) {
-      // skip non-conclusive tests and tests not in rubric
+      // skip non-conclusive tests
       if(!event.isConclusive) {
         continue
       }
@@ -93,7 +93,7 @@ class Grader {
       let tr: TestResult = {
         ...event,
         pointsAwarded: 0,
-        pointsPossible: this.rubric.tests[event.test],
+        pointsPossible: this.rubric.tests[event.test] || 0,
       }
       
       if(event.action === 'pass') {

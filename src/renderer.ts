@@ -42,7 +42,8 @@ class Renderer {
     // construct the table
     const rows = [this.headers]
     for(const packageName of packageNames) {
-      const sortedPackageResults = groups[packageName].sort((a, b) => a.test.localeCompare(b.test))
+      // sort package results by points possible (descending)
+      const sortedPackageResults = groups[packageName].sort((a, b) => b.pointsPossible - a.pointsPossible)
       // add a row for the package name
       rows.push([{ data: `<b><u>${packageName}</u></b>`, colspan: '3' } as SummaryTableCell])
       for(const test of sortedPackageResults) {
