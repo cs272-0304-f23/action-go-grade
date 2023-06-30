@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 
 import { exec } from '@actions/exec'
-import { Rubric } from './rubric'
+import { type Rubric } from './rubric'
 import { TestEvent, parseTestEvents } from './events'
 
 export interface TestResult extends TestEvent {
@@ -27,6 +27,7 @@ class Grader {
   async grade(stdout: string): Promise<{
     totalPointsAwarded: number
     testResults: TestResult[]
+    testsNotRan: string[]
   }> {
     core.info('grading repository...')
 
@@ -78,12 +79,16 @@ class Grader {
   private async assignPoints(testEvents: TestEvent[]): Promise<{
     totalPointsAwarded: number
     testResults: TestResult[]
+    testsNotRan: string[]
   }> {
+    // keep track of tests that were not run
+    let testsNotRan = new Set(Object.keys(this.rubric.tests))
+
     let totalPointsAwarded = 0
     let testResults: TestResult[] = []
     for(let event of testEvents) {
-      // skip non-conclusive tests and package level conclusions (these don't have a test name)
-      if(!event.isConclusive || !event.test) {
+      // skip non-conclusive tests
+      if(!event.isConclusive) {
         continue
       }
 
@@ -91,14 +96,21 @@ class Grader {
       let tr: TestResult = {
         ...event,
         pointsAwarded: 0,
-        pointsPossible: this.rubric.tests[event.test] || 0, // if test is not in rubric, it is worth 0 points
+        pointsPossible: 0,
       }
-      
+      // and push it to the list
+      testResults.push(tr)
+
+      // if the test is in the rubric, assign points and mark as ran
+      if(event.test in testsNotRan) {
+        tr.pointsPossible = this.rubric.tests[event.test]
+        testsNotRan.delete(event.test)
+      }
+
       if(event.action === 'pass') {
         tr.pointsAwarded = tr.pointsPossible
         totalPointsAwarded += tr.pointsAwarded
       }
-      testResults.push(tr)
 
       core.info(`test=${event.test} action=${event.action} points=${tr.pointsAwarded}/${tr.pointsPossible}`)
     }
@@ -106,6 +118,7 @@ class Grader {
     return {
       totalPointsAwarded,
       testResults,
+      testsNotRan: Array.from(testsNotRan),
     }
   }
 }

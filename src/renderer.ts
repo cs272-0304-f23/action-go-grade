@@ -3,10 +3,12 @@ import { type GradeResults } from "./deadline";
 import { TestEventAction, TestEventActionConclusion } from "./events";
 import PackageResult, { constructPackageResults } from "./packageResults";
 import { SummaryTableCell, SummaryTableRow } from "@actions/core/lib/summary";
+import { TestResult } from "./grader";
 
 class Renderer {
   private gradeResults: GradeResults
   private packageResults: PackageResult[]
+  private testsNotRan: string[]
   private stderr: string
   private totalConclusions: {[key in TestEventActionConclusion]: number} = {
     pass: 0,
@@ -19,11 +21,12 @@ class Renderer {
     { data: '💯 Points', header: true },
   ]
 
-  constructor(gradeResults: GradeResults, stderr: string) {
+  constructor(gradeResults: GradeResults, testResults: TestResult[], testsNotRan: string[], stderr: string) {
     this.stderr = stderr
+    this.testsNotRan = testsNotRan
     this.gradeResults = gradeResults
-    this.packageResults = constructPackageResults(gradeResults.testResults)
-    for(let result of gradeResults.testResults) {
+    this.packageResults = constructPackageResults(testResults)
+    for(let result of testResults) {
       this.totalConclusions[result.action as TestEventActionConclusion]++
     }
   }
@@ -50,7 +53,8 @@ class Renderer {
    * @returns results summary test
    */
   private renderSummaryText(): string {
-    let summarized = `${this.gradeResults.testResults.length} test${this.gradeResults.testResults.length === 1 ? '' : 's'}`
+    let totalTests = this.totalConclusions.pass + this.totalConclusions.fail + this.totalConclusions.skip
+    let summarized = `${totalTests} test${totalTests == 1 ? '' : 's'}`
 
     const conclusionText = Object.entries(this.totalConclusions)
       .filter(([_, count]) => count > 0)
@@ -59,6 +63,11 @@ class Renderer {
 
     if (conclusionText.length !== 0) {
       summarized += ` (${conclusionText})`
+    }
+
+    // if some tests were not run, notify the user to include them in their submission
+    if(this.testsNotRan.length > 0) {
+      summarized += `<p>⚠️ Some tests were not run. Ensure that these tests are included in your test file(s): <code>${this.testsNotRan.join(', ')}</code>.</p>`
     }
 
     // add some flair for perfect scores

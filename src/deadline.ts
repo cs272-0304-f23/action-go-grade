@@ -20,8 +20,6 @@ export type GradeResults = {
   daysLate: number
   pointsDeducted: number
   grade: number
-
-  testResults: TestResult[]
 }
 
 class TimeKeeper {
@@ -40,7 +38,7 @@ class TimeKeeper {
   /**
    * checks the deadline and calculates the grade
    */
-  checkDeadline(startingPoints: number, testResults: TestResult[]): GradeResults {
+  checkDeadline(startingPoints: number): GradeResults {
     const submissionDate = this.parseSubmissionDate()
     const daysLate = this.checkSubmissionDate(submissionDate)
     const { pointsDeducted, grade } = this.calculateGrade(daysLate, startingPoints)
@@ -54,7 +52,6 @@ class TimeKeeper {
       daysLate,
       pointsDeducted,
       grade,
-      testResults,
     }
   }
 
