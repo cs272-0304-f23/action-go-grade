@@ -102,7 +102,7 @@ class Grader {
       testResults.push(tr)
 
       // if the test is in the rubric, assign points and mark as ran
-      if(event.test in testsNotRan) {
+      if(testsNotRan.has(event.test)) {
         tr.pointsPossible = this.rubric.tests[event.test]
         testsNotRan.delete(event.test)
       }

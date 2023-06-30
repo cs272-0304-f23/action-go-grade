@@ -67,12 +67,12 @@ class Renderer {
 
     // if some tests were not run, notify the user to include them in their submission
     if(this.testsNotRan.length > 0) {
-      summarized += `<p>⚠️ Some tests were not run. Ensure that these tests are included in your test file(s): <code>${this.testsNotRan.join(', ')}</code>.</p>`
+      summarized += `<p>⚠️ Some tests were not found. Ensure that your test file(s) include these tests: <code>${this.testsNotRan.join(', ')}</code>.</p>`
     }
 
     // add some flair for perfect scores
     if(this.gradeResults.grade === this.gradeResults.possiblePoints) {
-      summarized += `<p>🎉💯🎉💯🎉</p>`
+      summarized += `🎉💯🎉💯🎉`
     }
 
     // add the grade
