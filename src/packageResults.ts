@@ -1,3 +1,5 @@
+import * as core from '@actions/core'
+
 import { TestResult } from "./grader"
 import { TestEventActionConclusion } from "./events"
 
@@ -44,11 +46,13 @@ export default class PackageResult {
  * conclusion counts for each package.
  */
 export function constructPackageResults(results: TestResult[]): PackageResult[] {
+  core.info(`constructing package results from ${results.length} test events`)
   const resultByPackage = new Map<string, PackageResult>()
 
   // First, we need to find all the package events. These are the events that have a test property of undefined.
   for(const result of results) {
     if(result.test === undefined) {
+      core.info(`found package event for package=${result.package}`)
       resultByPackage.set(result.package, new PackageResult(result, []))
     }
   }
@@ -57,6 +61,7 @@ export function constructPackageResults(results: TestResult[]): PackageResult[] 
   for(const result of results) {
     // if the result is a test and the package is in the map (this should always be true)
     if(result.test !== undefined && resultByPackage.has(result.package)) {
+      core.info(`adding test=${result.test} for package=${result.package}`)
       const packageResult = resultByPackage.get(result.package)! // safe to !: we only get here if the package is in the map
       packageResult.addEvent(result)
     }

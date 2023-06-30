@@ -115,6 +115,8 @@ class Grader {
       core.info(`test=${event.test} action=${event.action} points=${tr.pointsAwarded}/${tr.pointsPossible}`)
     }
 
+    core.info(`tests not ran: ${[...testsNotRan].join(', ') || 'none'}`)
+
     return {
       totalPointsAwarded,
       testResults,
