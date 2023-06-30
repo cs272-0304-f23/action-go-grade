@@ -25,8 +25,11 @@ class Runner {
    * Runs the action. 
    */
   async run() {
+    // run go test
+    const { retcode, stdout, stderr } = await this.grader.goTest()
+
     // grade the assignment (this will not fail the action; if `go test` fails, we just award 0 points)
-    const { totalPointsAwarded, testResults, stdout } = await this.grader.grade()
+    const { totalPointsAwarded, testResults } = await this.grader.grade(stdout)
 
     // interpret the results of the time keeper. Will not fail the action.
     const gradeResults = this.timeKeeper.checkDeadline(totalPointsAwarded, testResults)
@@ -35,7 +38,12 @@ class Runner {
     createArtifact(gradeResults)
 
     // generate summary
-    new Renderer(gradeResults).writeSummary(stdout)
+    new Renderer(gradeResults, stderr).writeSummary()
+
+    // fail the action if the go test failed
+    if(retcode !== 0) {
+      core.setFailed(`go test failed with code ${retcode}. Some tests were unsuccessful.`)
+    }
   }
 }
 

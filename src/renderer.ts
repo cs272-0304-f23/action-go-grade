@@ -1,11 +1,13 @@
 import * as core from "@actions/core";
 import { type GradeResults } from "./deadline";
 import { TestEventAction, TestEventActionConclusion } from "./events";
-import { TestResult } from "./grader";
+import PackageResult, { constructPackageResults } from "./packageResults";
 import { SummaryTableCell, SummaryTableRow } from "@actions/core/lib/summary";
 
 class Renderer {
   private gradeResults: GradeResults
+  private packageResults: PackageResult[]
+  private stderr: string
   private totalConclusions: {[key in TestEventActionConclusion]: number} = {
     pass: 0,
     fail: 0,
@@ -17,52 +19,29 @@ class Renderer {
     { data: '💯 Points', header: true },
   ]
 
-  constructor(gradeResults: GradeResults) {
+  constructor(gradeResults: GradeResults, stderr: string) {
+    this.stderr = stderr
     this.gradeResults = gradeResults
-    for(let result of this.gradeResults.testResults) {
+    this.packageResults = constructPackageResults(gradeResults.testResults)
+    for(let result of gradeResults.testResults) {
       this.totalConclusions[result.action as TestEventActionConclusion]++
     }
   }
 
-  writeSummary(stdout: string) {
+  /**
+   * Writes a summary of the test results to the GitHub Actions summary
+   */
+  writeSummary() {
     core.info('writing summary...')
-
-    // group results by package
-    const groups: {[key: string]: TestResult[]} = {}
-    for(const result of this.gradeResults.testResults) {
-      if(!groups[result.package]) {
-        groups[result.package] = []
-      }
-      groups[result.package].push(result)
-    }
-
-    // sort packages by name
-    const packageNames = Object.keys(groups).sort()
-
-    // construct the table
-    const rows = [this.headers]
-    for(const packageName of packageNames) {
-      // sort package results by points possible (descending)
-      const sortedPackageResults = groups[packageName].sort((a, b) => b.pointsPossible - a.pointsPossible)
-      // add a row for the package name
-      rows.push([{ data: `<b><u>${packageName}</u></b>`, colspan: '3' } as SummaryTableCell])
-      for(const test of sortedPackageResults) {
-        rows.push([
-          `${this.emojiFor(test.action)} ${test.action == 'skip' ? 'skipp' : test.action}ed`,
-          `<code>${test.test}</code>`,
-          test.pointsPossible ? `<b>${test.pointsAwarded}/${test.pointsPossible}</b>`: '<b>-</b>'
-        ])
-      }
-    }
-    rows.push([{ data: `<details><summary>🖨️ Output</summary><pre><code>${stdout}</code></pre></details>`, colspan: '3' } as SummaryTableCell])
 
     core.summary
       .addRaw('<div align="center">') // center alignment hack
       .addHeading('📝 Autograder results', 2)
       .addRaw(this.renderSummaryText())
       .addHeading('🧪 Test Results', 2)
-      .addTable(rows)
+      .addTable(this.renderSummaryTable())
       .addRaw('</div>')
+      .addRaw(this.renderStderr())
       .write()
   }
 
@@ -100,6 +79,46 @@ class Renderer {
   }
 
   /**
+   * Renders out results table
+   * @returns results table
+   */
+  private renderSummaryTable(): SummaryTableRow[] {
+    // helper function to get points text
+    const getPointsText = (pointsAwarded: number, pointsPossible: number) => {
+      return pointsPossible ? `<b>${pointsAwarded}/${pointsPossible}</b>`: '<b>-</b>'
+    }
+
+    // construct the table
+    const rows = [this.headers]
+
+    // sort package results by points possible (descending)
+    this.packageResults.sort((a, b) => b.pointsPossible - a.pointsPossible)
+    for(const packageResult of this.packageResults) {
+      // sort package results by points possible (descending)
+      packageResult.events.sort((a, b) => b.pointsPossible - a.pointsPossible)
+
+      // add a row for the package name
+      rows.push([
+        { data: `<b><u>${packageResult.packageEvent.package}</u></b>`, colspan: '2' } as SummaryTableCell,
+        getPointsText(packageResult.pointsAwarded, packageResult.pointsPossible)
+      ])
+
+      for(const test of packageResult.events) {
+        rows.push([
+          `${this.emojiFor(test.action)} ${test.action == 'skip' ? 'skipp' : test.action}ed`,
+          `<code>${test.test}</code>`,
+          getPointsText(test.pointsAwarded, test.pointsPossible)
+        ])
+      }
+      rows.push([
+        { data: `<details><summary>🖨️ Output</summary><pre><code>${packageResult.output}</code></pre></details>`, colspan: '3' } as SummaryTableCell
+      ])
+    }
+
+    return rows
+  }
+
+  /**
    * Displayed emoji for a specific test event
    * @param action test event action
    * @returns an emoji
@@ -115,6 +134,19 @@ class Renderer {
       default:
         return '❓'
     }
+  }
+
+  private renderStderr(): string {
+    return this.stderr
+      ? `<details>
+<summary>🚨 Standard Error Output</summary>
+
+\`\`\`
+${this.stderr}
+\`\`\`
+
+</details>`
+      : ''
   }
 }
 

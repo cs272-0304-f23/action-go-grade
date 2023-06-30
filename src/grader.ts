@@ -24,30 +24,28 @@ class Grader {
    * Grades the owning repository based on the results of a `go test` run
    * interprets the points awarded based on the provided test rubric.
    */
-  async grade(): Promise<{
+  async grade(stdout: string): Promise<{
     totalPointsAwarded: number
     testResults: TestResult[]
-    stdout: string
   }> {
     core.info('grading repository...')
-    // run go test
-    const { retcode, stdout } = await this.goTest()
-    if(retcode !== 0) {
-      core.info(`go test failed with code ${retcode}. Some tests were unsuccessful.`)
-    }
 
     // parse test events from stdout
     const testEvents = parseTestEvents(stdout)
 
     // assign points based on rubric
-    return { ...await this.assignPoints(testEvents), stdout }
+    return this.assignPoints(testEvents)
   }
 
   /**
    * Execs `go test` with specified arguments, capturing the output
    * @returns return code, stdout, stderr of `go test`
    */ 
-  private async goTest(): Promise<{retcode: number, stdout: string, stderr: string}> {
+  async goTest(): Promise<{
+    retcode: number,
+    stdout: string,
+    stderr: string
+  }> {
     let stdout = ''
     let stderr = ''
 
@@ -84,8 +82,8 @@ class Grader {
     let totalPointsAwarded = 0
     let testResults: TestResult[] = []
     for(let event of testEvents) {
-      // skip non-conclusive tests
-      if(!event.isConclusive) {
+      // skip non-conclusive tests and package level conclusions (these don't have a test name)
+      if(!event.isConclusive || !event.test) {
         continue
       }
 
@@ -93,7 +91,7 @@ class Grader {
       let tr: TestResult = {
         ...event,
         pointsAwarded: 0,
-        pointsPossible: this.rubric.tests[event.test] || 0,
+        pointsPossible: this.rubric.tests[event.test] || 0, // if test is not in rubric, it is worth 0 points
       }
       
       if(event.action === 'pass') {
