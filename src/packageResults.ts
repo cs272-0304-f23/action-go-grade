@@ -32,11 +32,14 @@ export default class PackageResult {
    * conclusion counts. It also appends the output of the event to the output of the package result.
    */
   addEvent(event: TestResult) {
-    this.events.push(event)
-    this.pointsPossible += event.pointsPossible
-    this.pointsAwarded += event.pointsAwarded
-    this.conclusions[event.action as TestEventActionConclusion] += 1
-    this.output += event.output
+    if(event.isConclusive) {
+      this.events.push(event)
+      this.pointsPossible += event.pointsPossible
+      this.pointsAwarded += event.pointsAwarded
+      this.conclusions[event.action as TestEventActionConclusion] += 1
+    } else if(event.action === 'output') {
+      this.output += event.output
+    }
   }
 }
 

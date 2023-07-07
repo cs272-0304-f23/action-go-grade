@@ -3,6 +3,7 @@ import * as core from "@actions/core";
 import Grader from './grader'
 import Renderer from "./renderer";
 
+import { exec } from '@actions/exec'
 import { parseRubric } from './rubric'
 import TimeKeeper, { createArtifact } from './deadline'
 
@@ -22,9 +23,23 @@ class Runner {
   }
 
   /**
+   * Builds the project and returns whether or not the build failed.
+   */
+  private async build(): Promise<boolean> {
+    const retcode = await exec(
+      'go',
+      ['build', './...'],
+    )
+    return retcode !== 0
+  }
+
+  /**
    * Runs the action. 
    */
   async run() {
+    // build the project
+    const buildError = await this.build()
+
     // run go test
     const { retcode, stdout, stderr } = await this.grader.goTest()
 
@@ -38,7 +53,7 @@ class Runner {
     createArtifact(gradeResults)
 
     // generate summary
-    new Renderer(gradeResults, testResults, testsNotRan, stderr).writeSummary()
+    new Renderer(gradeResults, testResults, testsNotRan, stderr, buildError).writeSummary()
 
     // fail the action if the go test failed
     if(retcode !== 0) {

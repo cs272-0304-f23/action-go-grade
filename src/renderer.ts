@@ -9,6 +9,7 @@ class Renderer {
   private gradeResults: GradeResults
   private packageResults: PackageResult[]
   private testsNotRan: string[]
+  private buildError: boolean
   private stderr: string
   private totalConclusions: {[key in TestEventActionConclusion]: number} = {
     pass: 0,
@@ -21,13 +22,16 @@ class Renderer {
     { data: '💯 Points', header: true },
   ]
 
-  constructor(gradeResults: GradeResults, testResults: TestResult[], testsNotRan: string[], stderr: string) {
+  constructor(gradeResults: GradeResults, testResults: TestResult[], testsNotRan: string[], stderr: string, buildError: boolean) {
     this.stderr = stderr
+    this.buildError = buildError
     this.testsNotRan = testsNotRan
     this.gradeResults = gradeResults
     this.packageResults = constructPackageResults(testResults)
     for(let result of testResults) {
-      this.totalConclusions[result.action as TestEventActionConclusion]++
+      if(result.isConclusive) {
+        this.totalConclusions[result.action as TestEventActionConclusion]++
+      }
     }
   }
 
@@ -37,14 +41,24 @@ class Renderer {
   writeSummary() {
     core.info('writing summary...')
 
-    core.summary
+    let summary = core.summary
       .addRaw('<div align="center">') // center alignment hack
       .addHeading('📝 Autograder results', 2)
       .addRaw(this.renderSummaryText())
+
+    if(this.buildError) {
+      summary = summary
+      .addHeading('🚨 Oh no! Your project did not compile', 2)
+    } else {
+      summary = summary
       .addHeading('🧪 Test Results', 2)
       .addTable(this.renderSummaryTable())
-      .addRaw('</div>')
+    }
+
+
+    summary
       .addRaw(this.renderStderr())
+      .addRaw('</div>')
       .write()
   }
 

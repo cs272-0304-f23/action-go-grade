@@ -87,11 +87,6 @@ class Grader {
     let totalPointsAwarded = 0
     let testResults: TestResult[] = []
     for(let event of testEvents) {
-      // skip non-conclusive tests
-      if(!event.isConclusive) {
-        continue
-      }
-
       // make test result object
       let tr: TestResult = {
         ...event,
@@ -100,6 +95,11 @@ class Grader {
       }
       // and push it to the list
       testResults.push(tr)
+
+      // skip non-conclusive tests (they don't count for points. eg. output)
+      if(!event.isConclusive) {
+        continue
+      }
 
       // if the test is in the rubric, assign points and mark as ran
       if(testsNotRan.has(event.test)) {
