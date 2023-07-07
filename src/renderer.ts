@@ -57,8 +57,8 @@ class Renderer {
 
 
     summary
-      .addRaw(this.renderStderr())
       .addRaw('</div>')
+      .addRaw(this.renderStderr())
       .write()
   }
 
@@ -79,8 +79,8 @@ class Renderer {
       summarized += ` (${conclusionText})`
     }
 
-    // if some tests were not run, notify the user to include them in their submission
-    if(this.testsNotRan.length > 0) {
+    // if some tests were not run, notify the user to include them in their submission (if there is a buid error, don't bother)
+    if(!this.buildError && this.testsNotRan.length > 0) {
       summarized += `<p>⚠️ Some tests were not found. Ensure that your test file(s) include these tests: <code>${this.testsNotRan.join(', ')}</code>.</p>`
     }
 
