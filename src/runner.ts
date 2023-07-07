@@ -26,11 +26,21 @@ class Runner {
    * Builds the project and returns whether or not the build failed.
    */
   private async build(): Promise<boolean> {
+    core.info('building project...')
+    const opts = {
+      cwd: '.',
+      ignoreReturnCode: true,
+    }
+
     const retcode = await exec(
       'go',
       ['build', './...'],
+      opts
     )
-    return retcode !== 0
+
+    const buildError = retcode !== 0
+    core.info(`build exited with code ${retcode}. ${buildError ? 'Build failed.' : 'Build succeeded.'}`)
+    return buildError
   }
 
   /**
