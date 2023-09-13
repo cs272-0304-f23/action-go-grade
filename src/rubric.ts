@@ -35,8 +35,10 @@ export function parseRubric(rubricUrl: string): Rubric {
     if(resp.status !== 200) {
       throw new Error(`Failed to fetch rubric from course site. Status code: ${resp.status}`)
     }
-    const parsedRubric = resp.data as Rubric
+    const parsedRubric = resp.data as Partial<Rubric>
+    core.info("Rubric parsed: " + JSON.stringify(parsedRubric))
     if(parsedRubric.dueDate) {
+      core.info("Due date found: " + parsedRubric.dueDate)
       parsedRubric.dueDate = DateTime.fromISO(parsedRubric.dueDate + eod, { zone })
     }
 
