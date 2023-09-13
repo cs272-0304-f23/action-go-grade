@@ -13,7 +13,8 @@ class Runner {
 
   constructor() {
     // Parse rubric from owning repository
-    const rubric = parseRubric()
+    const rubricUrl = core.getInput('rubricUrl')
+    const rubric = parseRubric(rubricUrl)
 
     // Parse module directory and test arguments from GitHub Actions environment
     const testArguments = core.getInput('testArguments')

@@ -6,8 +6,8 @@ inputs:
     description: 'Arguments to `go test`, `-json` will be prepended'
     required: false
     default: './...'
-  rubric:
-    description: 'Rubric used to grade assignment'
+  rubricUrl:
+    description: 'Where to fetch the rubric JSON from'
     required: true
 runs:
   using: 'node16'
