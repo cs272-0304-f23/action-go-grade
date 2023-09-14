@@ -36,14 +36,15 @@ export function parseRubric(rubricUrl: string): Rubric {
       throw new Error(`Failed to fetch rubric from course site. Status code: ${resp.status}`)
     }
     const parsedRubric = resp.data
-    core.info("Rubric parsed: " + JSON.stringify(parsedRubric))
     if(parsedRubric.dueDate) {
       core.info("Due date found: " + parsedRubric.dueDate)
       parsedRubric.dueDate = DateTime.fromISO(parsedRubric.dueDate + eod, { zone })
     }
+    core.info("Rubric parsed: " + JSON.stringify(parsedRubric))
 
     // merge parsed rubric into rubric
     Object.assign(rubric, parsedRubric)
+    core.info("Rubric merged: " + JSON.stringify(rubric))
   }).catch((err) => {
     core.error(err)
   })
