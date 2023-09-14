@@ -19,7 +19,7 @@ export type Rubric = {
  * Parses the rubric from the owning repository
  * @returns the rubric as an object
  */
-export function parseRubric(rubricUrl: string): Rubric {
+export async function parseRubric(rubricUrl: string): Promise<Rubric> {
   // initialize rubric with default values
   const rubric: Rubric = {
     latePenalty:  0.02,
@@ -30,24 +30,22 @@ export function parseRubric(rubricUrl: string): Rubric {
   }
 
   core.info('Parsing rubric from ' + rubricUrl)
-  axios.get(rubricUrl)
-  .then((resp) => {
-    if(resp.status !== 200) {
-      throw new Error(`Failed to fetch rubric from course site. Status code: ${resp.status}`)
-    }
-    const parsedRubric = resp.data
-    if(parsedRubric.dueDate) {
-      core.info("Due date found: " + parsedRubric.dueDate)
-      parsedRubric.dueDate = DateTime.fromISO(parsedRubric.dueDate + eod, { zone })
-    }
-    core.info("Rubric parsed: " + JSON.stringify(parsedRubric))
-
-    // merge parsed rubric into rubric
-    Object.assign(rubric, parsedRubric)
-    core.info("Rubric merged: " + JSON.stringify(rubric))
-  }).catch((err) => {
-    core.error(err)
+  const resp = await axios.get(rubricUrl).catch((err) => {
+    throw new Error(`Failed to fetch rubric from course site. Error: ${err}`)
   })
+
+  if(resp.status !== 200) {
+    throw new Error(`Failed to fetch rubric from course site. Status code: ${resp.status}`)
+  }
+  const parsedRubric = resp.data
+  if(parsedRubric.dueDate) {
+    core.info("Due date found: " + parsedRubric.dueDate)
+    parsedRubric.dueDate = DateTime.fromISO(parsedRubric.dueDate + eod, { zone })
+  }
+
+  // merge parsed rubric into rubric
+  Object.assign(rubric, parsedRubric as Partial<Rubric>)
+  core.info("Rubric merged: " + JSON.stringify(rubric))
 
   return rubric
 }

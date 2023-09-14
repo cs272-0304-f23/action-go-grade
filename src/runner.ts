@@ -8,19 +8,25 @@ import { parseRubric } from './rubric'
 import TimeKeeper, { createArtifact } from './deadline'
 
 class Runner {
-  grader: Grader
-  timeKeeper: TimeKeeper
+  grader?: Grader
+  timeKeeper?: TimeKeeper
 
-  constructor() {
+  private constructor() {}
+
+  static async create(): Promise<Runner> {
+    const runner = new Runner()
+
     // Parse rubric from owning repository
     const rubricUrl = core.getInput('rubricUrl')
-    const rubric = parseRubric(rubricUrl)
+    const rubric = await parseRubric(rubricUrl)
 
     // Parse module directory and test arguments from GitHub Actions environment
     const testArguments = core.getInput('testArguments')
-    this.grader = new Grader(rubric, testArguments)
     
-    this.timeKeeper = new TimeKeeper(rubric)
+    runner.grader = new Grader(rubric, testArguments)
+    runner.timeKeeper = new TimeKeeper(rubric)
+
+    return runner
   }
 
   /**
@@ -48,6 +54,10 @@ class Runner {
    * Runs the action. 
    */
   async run() {
+    if(!this.grader || !this.timeKeeper) {
+      throw new Error('Runner not initialized. Did you forget to call Runner.create()?')
+    }
+
     // build the project
     const buildError = await this.build()
 
