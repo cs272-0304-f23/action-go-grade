@@ -65,9 +65,8 @@ class TimeKeeper {
     console.log('Parsing submission date from GitHub context...')
     switch(github.context.eventName) {
       case 'push':
-        console.log(`\tPush event detected.`)
       case 'workflow_dispatch':
-        console.log(`\tWorkflow dispatch event detected.`)
+        console.log(`\t${github.context.eventName} event detected.`)
         // pushed_at is a timestamp for this commit
         const pushed = github.context.payload.repository?.pushed_at;
         if(pushed) {
