@@ -25,7 +25,7 @@ export async function parseRubric(rubricUrl: string): Promise<Rubric> {
     latePenalty:  0.02,
     maxPenalty:  0.26,
     tests:  {},
-    pointsPossible: 100,
+    pointsPossible: 0,
     dueDate: DateTime.now()
   }
 
@@ -46,6 +46,11 @@ export async function parseRubric(rubricUrl: string): Promise<Rubric> {
   // merge parsed rubric into rubric
   Object.assign(rubric, parsedRubric as Partial<Rubric>)
   core.info("Rubric merged: " + JSON.stringify(rubric))
+
+  rubric.pointsPossible = 0
+  for(let points of Object.values(rubric.tests)) {
+    rubric.pointsPossible += points
+  }
 
   return rubric
 }

@@ -5,7 +5,6 @@ import * as github from "@actions/github";
 import * as artifact from "@actions/artifact";
 
 import { Rubric } from "./rubric";
-import { TestResult } from "./grader";
 
 // GradeResults is an object that shows the results of the grade calculation
 export type GradeResults = {
@@ -65,11 +64,14 @@ class TimeKeeper {
     
     console.log('Parsing submission date from GitHub context...')
     switch(github.context.eventName) {
-      case 'workflow_dispatch':
       case 'push':
+        console.log(`\tPush event detected.`)
+      case 'workflow_dispatch':
+        console.log(`\tWorkflow dispatch event detected.`)
         // pushed_at is a timestamp for this commit
         const pushed = github.context.payload.repository?.pushed_at;
         if(pushed) {
+          console.log(`\tPushed at: ${pushed}`)
           submissionDate = luxon.DateTime.fromSeconds(parseInt(pushed))
         } else {
           console.log(`\tPayload's repository does not contain pushed_at timestamp. Payload.repository: ${JSON.stringify(github.context.payload.repository)}`)
@@ -79,6 +81,7 @@ class TimeKeeper {
         // created_at is an ISO timestamp for this release
         const created = github.context.payload.release?.created_at;
         if(created) {
+          console.log(`\tRelease created at: ${created}`)
           submissionDate = luxon.DateTime.fromISO(created)
         } else {
           console.log(`\tPayload's release does not contain created_at timestamp. Payload.release: ${JSON.stringify(github.context.payload.release)}`)
